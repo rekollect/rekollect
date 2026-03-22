@@ -15,6 +15,7 @@ from pathlib import Path
 from graphiti_core import Graphiti
 from graphiti_core.embedder.ollama import OllamaEmbedder, OllamaEmbedderConfig
 from graphiti_core.nodes import EpisodeType
+from graphiti_core.utils.bulk_utils import RawEpisode
 
 
 class JarvisMemory:
@@ -113,14 +114,18 @@ class JarvisMemory:
         # Ingest each chunk
         ref_time = datetime.fromisoformat(session_start.replace("Z", "+00:00")) if session_start else datetime.now(timezone.utc)
 
-        for i, episode_text in enumerate(episodes):
-            await self.graphiti.add_episode(
+        raw_episodes = [
+            RawEpisode(
                 name=f"Session {path.stem} part {i+1}",
-                episode_body=episode_text,
+                content=episode_text,
                 source=EpisodeType.text,
                 source_description=f"openclaw:session:{path.stem}",
                 reference_time=ref_time + timedelta(minutes=i * 5),
             )
+            for i, episode_text in enumerate(episodes)
+        ]
+
+        await self.graphiti.add_episode_bulk(raw_episodes)
 
         return {"episodes": len(episodes), "messages": len(messages)}
 
