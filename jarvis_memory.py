@@ -13,6 +13,7 @@ import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from graphiti_core import Graphiti
+from graphiti_core.embedder.ollama import OllamaEmbedder, OllamaEmbedderConfig
 from graphiti_core.nodes import EpisodeType
 
 
@@ -23,7 +24,15 @@ class JarvisMemory:
         neo4j_user: str = "neo4j",
         neo4j_password: str = "memory-engine-dev",
     ):
-        self.graphiti = Graphiti(neo4j_uri, neo4j_user, neo4j_password)
+        embedder = OllamaEmbedder(OllamaEmbedderConfig(
+            embedding_model="nomic-embed-text",
+            base_url="http://localhost:11434",
+            embedding_dim=768,
+        ))
+        self.graphiti = Graphiti(
+            neo4j_uri, neo4j_user, neo4j_password,
+            embedder=embedder,
+        )
 
     async def init(self):
         """Initialize graph indices."""
@@ -90,7 +99,7 @@ class JarvisMemory:
 
         for msg in messages:
             line = f"{msg['role'].upper()}: {msg['content']}"
-            if current_len + len(line) > 2000 and current_chunk:
+            if current_len + len(line) > 4000 and current_chunk:
                 episodes.append("\n".join(current_chunk))
                 current_chunk = [line]
                 current_len = len(line)
