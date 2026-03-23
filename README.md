@@ -32,7 +32,7 @@ cp .env.example .env
 # Edit .env with your OPENAI_API_KEY
 
 # 4. Run the API
-make dev
+uv run uvicorn rekollect.api:app --host 0.0.0.0 --port 8100
 ```
 
 API is now at `http://localhost:8100`.
@@ -44,7 +44,13 @@ API is now at `http://localhost:8100`.
 curl -X POST http://localhost:8100/v1/remember \
   -H "Content-Type: application/json" \
   -d '{"content": "Use Railway for always-on hosting", "source": "decision"}'
+# Returns: {"job_id": "...", "status": "pending", "chunks": 1}
+
+# Check status
+curl http://localhost:8100/v1/remember/{job_id}
 ```
+
+Large content is auto-chunked. Duplicate content returns 409 and boosts importance instead of re-ingesting.
 
 ### Recall with hybrid search
 ```bash
@@ -53,16 +59,9 @@ curl "http://localhost:8100/v1/recall?query=hosting+decision&limit=5"
 
 Returns facts (graph edges), entities (nodes), and episode citations.
 
-### Get LLM-ready context
+### Recall as LLM prompt context
 ```bash
-curl "http://localhost:8100/v1/context?query=database+architecture&max_chars=4000"
-```
-
-### Ingest OpenClaw sessions
-```bash
-curl -X POST http://localhost:8100/v1/ingest/session \
-  -H "Content-Type: application/json" \
-  -d '{"session_path": "/path/to/session.jsonl"}'
+curl "http://localhost:8100/v1/recall?query=database+architecture&format=prompt&max_chars=4000"
 ```
 
 ### Stats
