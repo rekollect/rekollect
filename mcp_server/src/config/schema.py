@@ -133,6 +133,12 @@ class VoyageProviderConfig(BaseModel):
     model: str = 'voyage-3'
 
 
+class OllamaProviderConfig(BaseModel):
+    """Ollama provider configuration."""
+
+    base_url: str = 'http://localhost:11434'
+
+
 class LLMProvidersConfig(BaseModel):
     """LLM providers configuration."""
 
@@ -162,6 +168,7 @@ class EmbedderProvidersConfig(BaseModel):
     azure_openai: AzureOpenAIProviderConfig | None = None
     gemini: GeminiProviderConfig | None = None
     voyage: VoyageProviderConfig | None = None
+    ollama: OllamaProviderConfig | None = None
 
 
 class EmbedderConfig(BaseModel):

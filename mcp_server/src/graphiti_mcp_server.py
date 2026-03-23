@@ -9,6 +9,11 @@ import logging
 import os
 import sys
 from pathlib import Path
+
+# Add project root to path for JarvisMemory import
+_project_root = str(Path(__file__).parent.parent.parent)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
 from typing import Any, Optional
 
 from dotenv import load_dotenv
@@ -751,6 +756,158 @@ async def get_status() -> StatusResponse:
             status='error',
             message=f'Graphiti MCP server is running but database connection failed: {error_msg}',
         )
+
+
+# ─── Rekollect Tools ─────────────────────────────────────────────
+
+_jarvis_memory = None
+
+async def _get_memory():
+    """Lazy-init JarvisMemory instance."""
+    global _jarvis_memory
+    if _jarvis_memory is None:
+        from jarvis_memory import JarvisMemory
+        _jarvis_memory = JarvisMemory(group_id='')
+        await _jarvis_memory.init()
+    return _jarvis_memory
+
+
+@mcp.tool()
+async def ingest_session(
+    session_path: str,
+) -> SuccessResponse | ErrorResponse:
+    """Ingest an OpenClaw session log (.jsonl) into the memory graph.
+
+    Extracts user + assistant messages, chunks them into episodes,
+    and runs entity/relationship extraction on each chunk.
+
+    Args:
+        session_path: Absolute path to the .jsonl session file
+    """
+    try:
+        mem = await _get_memory()
+        result = await mem.ingest_session(session_path)
+        if 'error' in result:
+            return ErrorResponse(error=result['error'])
+        return SuccessResponse(
+            message=f"Ingested {result.get('episodes', 0)} episodes from {result.get('messages', 0)} messages"
+        )
+    except Exception as e:
+        logger.error(f'Error ingesting session: {e}')
+        return ErrorResponse(error=f'Error ingesting session: {e}')
+
+
+@mcp.tool()
+async def ingest_sessions_batch(
+    directory: str,
+    since_hours: int | None = None,
+) -> SuccessResponse | ErrorResponse:
+    """Ingest all .jsonl session files from a directory.
+
+    Args:
+        directory: Path to directory containing .jsonl session files
+        since_hours: Only ingest files modified in the last N hours (optional)
+    """
+    try:
+        mem = await _get_memory()
+        result = await mem.ingest_sessions_batch(directory, since_hours)
+        if 'error' in result:
+            return ErrorResponse(error=result['error'])
+        msg = f"Ingested {result['ingested']}/{result['total_files']} files ({result['episodes']} episodes)"
+        if result.get('errors'):
+            msg += f". {len(result['errors'])} errors."
+        return SuccessResponse(message=msg)
+    except Exception as e:
+        logger.error(f'Error batch ingesting: {e}')
+        return ErrorResponse(error=f'Error batch ingesting: {e}')
+
+
+@mcp.tool()
+async def recall_context(
+    query: str,
+    max_chars: int = 4000,
+) -> dict | ErrorResponse:
+    """Recall relevant context from the memory graph for an LLM prompt.
+
+    Uses hybrid search (BM25 + vector + RRF) across facts, entities, and
+    raw conversation episodes. Returns a markdown context block optimized
+    for LLM system prompts.
+
+    Args:
+        query: What to recall (natural language)
+        max_chars: Maximum characters in the context block (default 4000)
+    """
+    try:
+        mem = await _get_memory()
+        ctx = await mem.get_context(query, max_chars=max_chars)
+        return {
+            'context': ctx,
+            'token_estimate': len(ctx) // 4,
+        }
+    except Exception as e:
+        logger.error(f'Error recalling context: {e}')
+        return ErrorResponse(error=f'Error recalling context: {e}')
+
+
+@mcp.tool()
+async def recall_search(
+    query: str,
+    limit: int = 10,
+) -> dict | ErrorResponse:
+    """Search the memory graph with hybrid search.
+
+    Returns structured results: facts (graph edges), entities (nodes),
+    and episode snippets (raw conversation citations).
+    Automatically updates importance metrics on recalled facts.
+
+    Args:
+        query: Search query (natural language)
+        limit: Max results per category (default 10)
+    """
+    try:
+        mem = await _get_memory()
+        return await mem.recall(query, limit=limit)
+    except Exception as e:
+        logger.error(f'Error searching memory: {e}')
+        return ErrorResponse(error=f'Error searching memory: {e}')
+
+
+@mcp.tool()
+async def memory_stats() -> dict | ErrorResponse:
+    """Get memory graph statistics.
+
+    Returns entity/fact/episode counts, top connected entities,
+    and core memories (high importance facts).
+    """
+    try:
+        mem = await _get_memory()
+        return await mem.stats()
+    except Exception as e:
+        logger.error(f'Error getting stats: {e}')
+        return ErrorResponse(error=f'Error getting stats: {e}')
+
+
+@mcp.tool()
+async def remember(
+    text: str,
+    source: str = 'manual',
+) -> SuccessResponse | ErrorResponse:
+    """Manually add a memory to the graph.
+
+    The text will be processed for entity/relationship extraction
+    and stored as an episode in the knowledge graph.
+
+    Args:
+        text: The content to remember
+        source: Source identifier (default 'manual')
+    """
+    try:
+        mem = await _get_memory()
+        await mem.remember(text, source)
+        return SuccessResponse(message='Memory stored successfully')
+    except Exception as e:
+        logger.error(f'Error storing memory: {e}')
+        return ErrorResponse(error=f'Error storing memory: {e}')
 
 
 @mcp.custom_route('/health', methods=['GET'])
