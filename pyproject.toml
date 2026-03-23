@@ -10,10 +10,9 @@ authors = [
 ]
 
 dependencies = [
-    "graphiti-core[neo4j]>=0.28.0",
+    "graphiti-core[neo4j,ollama]",
     "fastapi>=0.115.0",
     "uvicorn>=0.34.0",
-    "httpx>=0.28.0",
     "pydantic>=2.10.0",
 ]
 
@@ -31,3 +30,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["rekollect"]
+
+[tool.uv.sources]
+graphiti-core = { git = "https://github.com/rekollect/graphiti.git" }
