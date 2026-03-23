@@ -106,7 +106,7 @@
       "name": "Memory",
       "item": [
         {
-          "name": "Remember",
+          "name": "Remember (short)",
           "request": {
             "method": "POST",
             "url": "{{baseUrl}}/v1/remember",
@@ -118,37 +118,15 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"content\": \"Elton decided to use Railway for always-on hosting instead of Fly.io\",\n  \"source\": \"manual\"\n}"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Ingestion",
-      "item": [
-        {
-          "name": "Ingest Session",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/v1/ingest/session",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"session_path\": \"/Users/elton/.openclaw/agents/main/sessions/YOUR_SESSION_ID.jsonl\"\n}"
+              "raw": "{\n  \"content\": \"Elton decided to use Railway for always-on hosting\",\n  \"source\": \"decision\"\n}"
             }
           }
         },
         {
-          "name": "Ingest Batch",
+          "name": "Remember (large text)",
           "request": {
             "method": "POST",
-            "url": "{{baseUrl}}/v1/ingest/batch",
+            "url": "{{baseUrl}}/v1/remember",
             "header": [
               {
                 "key": "Content-Type",
@@ -157,8 +135,15 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"directory\": \"/Users/elton/.openclaw/agents/main/sessions/\",\n  \"since_hours\": 24\n}"
+              "raw": "{\n  \"content\": \"Paste a long conversation or document here. Content over 4000 chars will be auto-chunked into multiple episodes for better extraction quality.\",\n  \"source\": \"conversation\"\n}"
             }
+          }
+        },
+        {
+          "name": "Remember Status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/remember/{{job_id}}"
           }
         }
       ]

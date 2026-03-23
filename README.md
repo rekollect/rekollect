@@ -95,11 +95,10 @@ Dependencies: `graphiti-core` (graph engine), `fastapi` (API), `httpx` (Ollama c
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/v1/remember` | Add a memory |
-| POST/GET | `/v1/recall` | Search memory (hybrid). `format=json` (default) or `format=prompt` (markdown for LLM) |
-| POST | `/v1/ingest/session` | Ingest OpenClaw session |
-| POST | `/v1/ingest/batch` | Batch ingest directory |
-| GET | `/v1/stats` | Graph statistics |
+| POST | `/v1/remember` | Add memory (auto-chunks large content). Returns job ID (202) |
+| GET | `/v1/remember/{job_id}` | Check remember job status/progress |
+| POST/GET | `/v1/recall` | Search memory (hybrid). `format=json` or `format=prompt` |
+| GET | `/v1/stats` | Graph statistics + core memories |
 | GET | `/v1/whats-new` | Recent changes |
 | GET | `/v1/entities` | List/search entities |
 | GET | `/v1/timeline?entity=...` | Entity timeline |
