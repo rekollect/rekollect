@@ -67,19 +67,26 @@ def _hash_content(content: str) -> str:
     return hashlib.sha256(content.strip().encode()).hexdigest()
 
 
+IMPORTANCE_FLAT_BOOST = 2.0
+
 async def _boost_importance(content: str):
-    """Boost importance on facts related to previously remembered content."""
+    """Flat importance boost (+2) on facts related to previously remembered content."""
     try:
-        # Search for facts from this content and bump their importance
         results = await memory.recall(content[:200], limit=10)
         edge_uuids = [f["uuid"] for f in results.get("facts", [])]
         if edge_uuids:
-            from rekollect.importance import query_hash, IMPORTANCE_UPDATE_CYPHER
-            now = datetime.now(timezone.utc).isoformat()
-            qhash = query_hash(f"importance_boost_{now}")
             async with memory.graphiti.driver.session() as session:
                 for uid in edge_uuids:
-                    await session.run(IMPORTANCE_UPDATE_CYPHER, {"uuid": uid, "now": now, "hash": qhash})
+                    await session.run(
+                        """
+                        MATCH ()-[r:RELATES_TO {uuid: $uuid}]-()
+                        SET r.importance = CASE
+                            WHEN COALESCE(r.importance, 50.0) + $boost > 100.0 THEN 100.0
+                            ELSE COALESCE(r.importance, 50.0) + $boost
+                        END
+                        """,
+                        {"uuid": uid, "boost": IMPORTANCE_FLAT_BOOST},
+                    )
     except Exception:
         pass  # Best effort
 
@@ -126,6 +133,7 @@ async def remember(req: RememberRequest):
     # Check for duplicate
     if content_hash in content_hashes and not req.force:
         existing = content_hashes[content_hash]
+        existing["submit_count"] = existing.get("submit_count", 1) + 1
 
         # Boost importance as a signal that this content matters
         asyncio.create_task(_boost_importance(req.content))
@@ -134,10 +142,11 @@ async def remember(req: RememberRequest):
             status_code=409,
             detail={
                 "error": "duplicate",
-                "message": "Already remembered. Importance boosted.",
+                "message": "Already remembered. Importance boosted (+2).",
                 "existing_job_id": existing["job_id"],
                 "remembered_at": existing["created_at"],
-                "importance_boost": True,
+                "submit_count": existing["submit_count"],
+                "importance_boost": IMPORTANCE_FLAT_BOOST,
             },
         )
 
