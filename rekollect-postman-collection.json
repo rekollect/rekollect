@@ -28,60 +28,75 @@
       "name": "Search & Recall",
       "item": [
         {
-          "name": "Recall (Hybrid Search)",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/v1/recall",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": \"DFS cheatsheet project status\",\n  \"limit\": 10\n}"
-            }
-          }
-        },
-        {
-          "name": "Recall (GET)",
+          "name": "Recall (JSON)",
           "request": {
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/v1/recall?query=Rekollect architecture&limit=5",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "recall"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "recall"
+              ],
               "query": [
-                { "key": "query", "value": "Rekollect architecture" },
-                { "key": "limit", "value": "5" }
+                {
+                  "key": "query",
+                  "value": "Rekollect architecture"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
               ]
             }
           }
         },
         {
-          "name": "Context Assembly",
-          "request": {
-            "method": "POST",
-            "url": "{{baseUrl}}/v1/context",
-            "header": [
-              { "key": "Content-Type", "value": "application/json" }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"query\": \"What does Elton prefer for database choices?\",\n  \"max_chars\": 4000\n}"
-            }
-          }
-        },
-        {
-          "name": "Context Assembly (GET)",
+          "name": "Recall (Prompt format)",
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/v1/context?query=Neo4j graph database decision&max_chars=2000",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "context"],
+              "raw": "{{baseUrl}}/v1/recall?query=database+decisions&format=prompt&max_chars=2000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "recall"
+              ],
               "query": [
-                { "key": "query", "value": "Neo4j graph database decision" },
-                { "key": "max_chars", "value": "2000" }
+                {
+                  "key": "query",
+                  "value": "database decisions"
+                },
+                {
+                  "key": "format",
+                  "value": "prompt"
+                },
+                {
+                  "key": "max_chars",
+                  "value": "2000"
+                }
               ]
+            }
+          }
+        },
+        {
+          "name": "Recall (POST)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/recall",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"DFS cheatsheet project\",\n  \"limit\": 10,\n  \"format\": \"json\"\n}"
             }
           }
         }
@@ -96,7 +111,10 @@
             "method": "POST",
             "url": "{{baseUrl}}/v1/remember",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -115,7 +133,10 @@
             "method": "POST",
             "url": "{{baseUrl}}/v1/ingest/session",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -129,7 +150,10 @@
             "method": "POST",
             "url": "{{baseUrl}}/v1/ingest/batch",
             "header": [
-              { "key": "Content-Type", "value": "application/json" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -155,10 +179,18 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/v1/whats-new?since_hours=24",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "whats-new"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "whats-new"
+              ],
               "query": [
-                { "key": "since_hours", "value": "24" }
+                {
+                  "key": "since_hours",
+                  "value": "24"
+                }
               ]
             }
           }
@@ -169,10 +201,18 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/v1/entities?limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "entities"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "entities"
+              ],
               "query": [
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -183,11 +223,22 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/v1/entities?query=Rekollect&limit=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "entities"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "entities"
+              ],
               "query": [
-                { "key": "query", "value": "Rekollect" },
-                { "key": "limit", "value": "10" }
+                {
+                  "key": "query",
+                  "value": "Rekollect"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
               ]
             }
           }
@@ -198,11 +249,22 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/v1/timeline?entity=Elton&limit=20",
-              "host": ["{{baseUrl}}"],
-              "path": ["v1", "timeline"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "timeline"
+              ],
               "query": [
-                { "key": "entity", "value": "Elton" },
-                { "key": "limit", "value": "20" }
+                {
+                  "key": "entity",
+                  "value": "Elton"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
               ]
             }
           }

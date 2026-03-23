@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Rekollect Memory Engine",
-    version="0.1.0",
+    version="0.2.0",
     description="Graph-based agent memory with hybrid search, temporal awareness, and importance scoring",
     lifespan=lifespan,
 )
@@ -52,10 +52,8 @@ class IngestBatchRequest(BaseModel):
 class RecallRequest(BaseModel):
     query: str
     limit: int = Field(default=10, ge=1, le=50)
-
-class ContextRequest(BaseModel):
-    query: str
-    max_chars: int = Field(default=4000, ge=500, le=20000)
+    format: str = Field(default="json", description="Response format: 'json' (structured) or 'prompt' (markdown for LLM injection)")
+    max_chars: int = Field(default=4000, ge=500, le=20000, description="Max chars when format=prompt")
 
 
 # ─── Endpoints ──────────────────────────────────────────────────
@@ -84,24 +82,23 @@ async def ingest_batch(req: IngestBatchRequest):
 
 @app.post("/v1/recall")
 async def recall_post(req: RecallRequest):
+    if req.format == "prompt":
+        ctx = await memory.get_context(req.query, max_chars=req.max_chars)
+        return {"context": ctx, "token_estimate": len(ctx) // 4}
     return await memory.recall(req.query, limit=req.limit)
 
 
 @app.get("/v1/recall")
-async def recall_get(query: str = Query(...), limit: int = Query(10, ge=1, le=50)):
+async def recall_get(
+    query: str = Query(...),
+    limit: int = Query(10, ge=1, le=50),
+    format: str = Query("json", description="'json' or 'prompt'"),
+    max_chars: int = Query(4000, ge=500, le=20000),
+):
+    if format == "prompt":
+        ctx = await memory.get_context(query, max_chars=max_chars)
+        return {"context": ctx, "token_estimate": len(ctx) // 4}
     return await memory.recall(query, limit=limit)
-
-
-@app.post("/v1/context")
-async def context_post(req: ContextRequest):
-    ctx = await memory.get_context(req.query, max_chars=req.max_chars)
-    return {"context": ctx, "token_estimate": len(ctx) // 4}
-
-
-@app.get("/v1/context")
-async def context_get(query: str = Query(...), max_chars: int = Query(4000, ge=500, le=20000)):
-    ctx = await memory.get_context(query, max_chars=max_chars)
-    return {"context": ctx, "token_estimate": len(ctx) // 4}
 
 
 @app.get("/v1/stats")
@@ -152,4 +149,4 @@ async def timeline(entity: str = Query(...), limit: int = Query(20, ge=1, le=100
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "rekollect", "version": "0.1.0"}
+    return {"status": "ok", "service": "rekollect", "version": "0.2.0"}

@@ -12,7 +12,7 @@ Built on [Graphiti](https://github.com/getzep/graphiti) + Neo4j.
 | Temporal Facts | ✅ | ❌ | ✅ | ❌ |
 | Hybrid Search (BM25 + Vector + RRF) | ✅ | ❌ | ❌ | Partial |
 | Importance Scoring | ✅ | ❌ | ❌ | ❌ |
-| Context Assembly | ✅ | ❌ | ❌ | ❌ |
+
 | MCP Server | ✅ | ✅ | ❌ | ❌ |
 | REST API | ✅ | ✅ | ❌ | ❌ |
 
@@ -96,10 +96,7 @@ Dependencies: `graphiti-core` (graph engine), `fastapi` (API), `httpx` (Ollama c
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/v1/remember` | Add a memory |
-| POST | `/v1/recall` | Hybrid search |
-| GET | `/v1/recall?query=...` | Hybrid search (GET) |
-| POST | `/v1/context` | LLM context assembly |
-| GET | `/v1/context?query=...` | LLM context assembly (GET) |
+| POST/GET | `/v1/recall` | Search memory (hybrid). `format=json` (default) or `format=prompt` (markdown for LLM) |
 | POST | `/v1/ingest/session` | Ingest OpenClaw session |
 | POST | `/v1/ingest/batch` | Batch ingest directory |
 | GET | `/v1/stats` | Graph statistics |
