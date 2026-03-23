@@ -1,6 +1,7 @@
 """Rekollect REST API — FastAPI wrapper around RekollectMemory."""
 
 import asyncio
+import hashlib
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -14,8 +15,9 @@ from rekollect.memory import RekollectMemory
 
 memory: RekollectMemory | None = None
 
-# In-memory job store (moves to Supabase for multi-tenant)
+# In-memory stores (move to Supabase for multi-tenant)
 jobs: dict[str, dict] = {}
+content_hashes: dict[str, dict] = {}  # hash → {job_id, created_at}
 
 
 @asynccontextmanager
@@ -34,7 +36,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Rekollect Memory Engine",
-    version="0.3.0",
+    version="0.4.0",
     description="Graph-based agent memory with hybrid search, temporal awareness, and importance scoring",
     lifespan=lifespan,
 )
@@ -47,6 +49,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 class RememberRequest(BaseModel):
     content: str = Field(..., description="Text to remember (any length — auto-chunks if needed)")
     source: str = Field(default="manual", description="Source label for provenance")
+    force: bool = Field(default=False, description="Force re-ingestion even if content was already remembered")
 
 class RecallRequest(BaseModel):
     query: str
@@ -59,18 +62,38 @@ class RecallRequest(BaseModel):
 
 CHUNK_SIZE = 4000
 
+
+def _hash_content(content: str) -> str:
+    return hashlib.sha256(content.strip().encode()).hexdigest()
+
+
+async def _boost_importance(content: str):
+    """Boost importance on facts related to previously remembered content."""
+    try:
+        # Search for facts from this content and bump their importance
+        results = await memory.recall(content[:200], limit=10)
+        edge_uuids = [f["uuid"] for f in results.get("facts", [])]
+        if edge_uuids:
+            from rekollect.importance import query_hash, IMPORTANCE_UPDATE_CYPHER
+            now = datetime.now(timezone.utc).isoformat()
+            qhash = query_hash(f"importance_boost_{now}")
+            async with memory.graphiti.driver.session() as session:
+                for uid in edge_uuids:
+                    await session.run(IMPORTANCE_UPDATE_CYPHER, {"uuid": uid, "now": now, "hash": qhash})
+    except Exception:
+        pass  # Best effort
+
+
 async def _process_remember(job_id: str, content: str, source: str):
     """Background task: chunk content and ingest into graph."""
     job = jobs[job_id]
     try:
         job["status"] = "processing"
 
-        # Auto-chunk if content is large
         if len(content) <= CHUNK_SIZE:
             chunks = [content]
         else:
             from rekollect.ingestion import chunk_messages
-            # Wrap as a single "message" for the chunker
             msgs = [{"role": "user", "content": content}]
             chunks = chunk_messages(msgs, max_chars=CHUNK_SIZE)
 
@@ -94,10 +117,33 @@ async def _process_remember(job_id: str, content: str, source: str):
 async def remember(req: RememberRequest):
     """Add memory. Auto-chunks large content. Returns immediately with a job ID.
 
-    For short content (<4000 chars), processing is near-instant.
-    For large content, poll GET /v1/remember/{job_id} for progress.
+    If the same content was already remembered:
+    - Without force: returns 409 and boosts importance of existing facts
+    - With force=true: re-ingests (new extraction pass)
     """
+    content_hash = _hash_content(req.content)
+
+    # Check for duplicate
+    if content_hash in content_hashes and not req.force:
+        existing = content_hashes[content_hash]
+
+        # Boost importance as a signal that this content matters
+        asyncio.create_task(_boost_importance(req.content))
+
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "duplicate",
+                "message": "Already remembered. Importance boosted.",
+                "existing_job_id": existing["job_id"],
+                "remembered_at": existing["created_at"],
+                "importance_boost": True,
+            },
+        )
+
     job_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+
     jobs[job_id] = {
         "job_id": job_id,
         "status": "pending",
@@ -105,10 +151,12 @@ async def remember(req: RememberRequest):
         "content_length": len(req.content),
         "chunks": 1 if len(req.content) <= CHUNK_SIZE else None,
         "progress": None,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now,
         "completed_at": None,
         "error": None,
     }
+
+    content_hashes[content_hash] = {"job_id": job_id, "created_at": now}
 
     asyncio.create_task(_process_remember(job_id, req.content, req.source))
 
@@ -206,4 +254,4 @@ async def timeline(entity: str = Query(...), limit: int = Query(20, ge=1, le=100
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "rekollect", "version": "0.3.0"}
+    return {"status": "ok", "service": "rekollect", "version": "0.4.0"}
