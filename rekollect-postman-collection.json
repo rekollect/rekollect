@@ -1,0 +1,213 @@
+{
+  "info": {
+    "name": "Rekollect Memory Engine",
+    "description": "Graph-based agent memory with hybrid search, temporal facts, and importance scoring.\n\nBase URL: http://localhost:8100",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8100",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search & Recall",
+      "item": [
+        {
+          "name": "Recall (Hybrid Search)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/recall",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"DFS cheatsheet project status\",\n  \"limit\": 10\n}"
+            }
+          }
+        },
+        {
+          "name": "Recall (GET)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/recall?query=Rekollect architecture&limit=5",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "recall"],
+              "query": [
+                { "key": "query", "value": "Rekollect architecture" },
+                { "key": "limit", "value": "5" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Context Assembly",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/context",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"What does Elton prefer for database choices?\",\n  \"max_chars\": 4000\n}"
+            }
+          }
+        },
+        {
+          "name": "Context Assembly (GET)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/context?query=Neo4j graph database decision&max_chars=2000",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "context"],
+              "query": [
+                { "key": "query", "value": "Neo4j graph database decision" },
+                { "key": "max_chars", "value": "2000" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memory",
+      "item": [
+        {
+          "name": "Remember",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/remember",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Elton decided to use Railway for always-on hosting instead of Fly.io\",\n  \"source\": \"manual\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ingestion",
+      "item": [
+        {
+          "name": "Ingest Session",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/ingest/session",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_path\": \"/Users/elton/.openclaw/agents/main/sessions/YOUR_SESSION_ID.jsonl\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Ingest Batch",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/v1/ingest/batch",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"directory\": \"/Users/elton/.openclaw/agents/main/sessions/\",\n  \"since_hours\": 24\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Graph",
+      "item": [
+        {
+          "name": "Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/v1/stats"
+          }
+        },
+        {
+          "name": "What's New",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/whats-new?since_hours=24",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "whats-new"],
+              "query": [
+                { "key": "since_hours", "value": "24" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Entities",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/entities?limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "entities"],
+              "query": [
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Entities",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/entities?query=Rekollect&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "entities"],
+              "query": [
+                { "key": "query", "value": "Rekollect" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Entity Timeline",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/v1/timeline?entity=Elton&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["v1", "timeline"],
+              "query": [
+                { "key": "entity", "value": "Elton" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

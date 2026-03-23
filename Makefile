@@ -1,32 +1,19 @@
-.PHONY: install format lint test all check
+.PHONY: dev test ingest
 
-# Define variables
-PYTHON = python3
-UV = uv
-PYTEST = $(UV) run pytest
-RUFF = $(UV) run ruff
-PYRIGHT = $(UV) run pyright
+dev:
+	docker compose up -d
+	@echo "Waiting for Neo4j..."
+	@sleep 5
+	uv run uvicorn rekollect.api:app --host 0.0.0.0 --port 8100 --reload
 
-# Default target
-all: format lint test
-
-# Install dependencies
-install:
-	$(UV) sync --extra dev
-
-# Format code
-format:
-	$(RUFF) check --select I --fix
-	$(RUFF) format
-
-# Lint code
-lint:
-	$(RUFF) check
-	$(PYRIGHT) ./graphiti_core 
-
-# Run tests
 test:
-	DISABLE_FALKORDB=1 DISABLE_KUZU=1 DISABLE_NEPTUNE=1 $(PYTEST) -m "not integration"
+	uv run pytest tests/ -v
 
-# Run format, lint, and test
-check: format lint test
+ingest:
+	uv run python scripts/backfill.py $(ARGS)
+
+stats:
+	@curl -s http://localhost:8100/v1/stats | python3 -m json.tool
+
+recall:
+	@curl -s "http://localhost:8100/v1/recall?query=$(Q)&limit=5" | python3 -m json.tool
