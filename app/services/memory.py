@@ -162,7 +162,7 @@ async def process_document(
         # Graph extraction
         entity_count = 0
         if graph:
-            source = (doc.get("metadata") or {}).get("source") or "rekollect-api"
+            source = (postgres._parse_json(doc.get("metadata"))).get("source") or "rekollect-api"
             entity_count = await graph.add_episodes(
                 chunks, source=source,
                 user_id=doc_user_id,

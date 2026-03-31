@@ -68,9 +68,9 @@ async def list_memories(
         MemorySummary(
             id=d["id"],
             title=d.get("user_title"),
-            type=d.get("file_type") or (d.get("metadata") or {}).get("type", "text"),
+            type=d.get("file_type") or d.get("metadata", {}).get("type", "text"),
             collection=d.get("collection"),
-            source=(d.get("metadata") or {}).get("source"),
+            source=d.get("metadata", {}).get("source"),
             created_at=d.get("created_at"),
             chunk_count=data["chunk_counts"].get(str(d["id"]), 0),
             status=d.get("processing_status"),

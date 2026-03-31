@@ -13,6 +13,16 @@ import asyncpg
 logger = logging.getLogger(__name__)
 
 
+def _parse_json(val):
+    """Decode a JSONB value that asyncpg may return as a raw string."""
+    if isinstance(val, str):
+        try:
+            return json.loads(val)
+        except (json.JSONDecodeError, TypeError):
+            return {}
+    return val if val is not None else {}
+
+
 async def create_document(
     pool: asyncpg.Pool,
     user_id: str,
@@ -142,9 +152,10 @@ async def list_documents(
     )
     rows = [dict(r) for r in rows]
 
-    # Serialize metadata (jsonb comes back as dict, but id comes back as UUID)
+    # Serialize metadata (jsonb may come back as a raw string from asyncpg)
     for r in rows:
         r["id"] = str(r["id"])
+        r["metadata"] = _parse_json(r.get("metadata"))
         if r.get("created_at"):
             r["created_at"] = r["created_at"].isoformat()
 
@@ -237,4 +248,6 @@ def _serialize_row(row: asyncpg.Record) -> dict:
             d[k] = v.isoformat()
         elif hasattr(v, "hex"):  # UUID
             d[k] = str(v)
+    if "metadata" in d:
+        d["metadata"] = _parse_json(d["metadata"])
     return d
