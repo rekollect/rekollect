@@ -1,35 +1,40 @@
 [project]
 name = "rekollect"
-version = "0.1.0"
-description = "Graph-based agent memory with hybrid search, temporal facts, and importance scoring"
-readme = "README.md"
-license = "MIT"
+version = "2.0.0"
+description = "Memory infrastructure for AI agents. Store, search, and recall anything."
 requires-python = ">=3.11"
-authors = [
-    { name = "Elton Faggétt" },
-]
-
 dependencies = [
-    "graphiti-core[neo4j,ollama]",
-    "fastapi>=0.115.0",
-    "uvicorn>=0.34.0",
-    "pydantic>=2.10.0",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "asyncpg>=0.30",
+    "openai>=1.0",
+    "pydantic-settings>=2.0",
+    "bcrypt>=4.0",
+    "graphiti-core @ git+https://github.com/290design/graphiti.git",
+    "fastmcp>=2.0",
 ]
 
 [project.optional-dependencies]
-mcp = ["mcp[cli]>=1.0.0"]
-dev = ["pytest>=8.0", "pytest-asyncio>=0.24.0"]
-
-[project.urls]
-Homepage = "https://github.com/rekollect/rekollect"
-Repository = "https://github.com/rekollect/rekollect"
+dev = [
+    "pytest>=6.0",
+    "pytest-asyncio",
+    "pytest-order",
+    "httpx>=0.27",
+    "ruff",
+]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build.targets.wheel]
-packages = ["rekollect"]
+[tool.hatch.metadata]
+allow-direct-references = true
 
-[tool.uv.sources]
-graphiti-core = { git = "https://github.com/rekollect/graphiti.git" }
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100

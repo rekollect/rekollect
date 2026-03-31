@@ -1,107 +1,85 @@
 # Rekollect
 
-Graph-based agent memory with hybrid search, temporal facts, and importance scoring.
+Memory infrastructure for AI agents. Store, search, and recall anything.
 
-Built on [Graphiti](https://github.com/getzep/graphiti) + Neo4j.
-
-## Why Rekollect?
-
-| Feature | Rekollect | Mem0 | Graphiti | LightRAG |
-|---------|-----------|------|----------|----------|
-| Knowledge Graph | ✅ | ❌ | ✅ | ✅ |
-| Temporal Facts | ✅ | ❌ | ✅ | ❌ |
-| Hybrid Search (BM25 + Vector + RRF) | ✅ | ❌ | ❌ | Partial |
-| Importance Scoring | ✅ | ❌ | ❌ | ❌ |
-
-| MCP Server | ✅ | ✅ | ❌ | ❌ |
-| REST API | ✅ | ✅ | ❌ | ❌ |
-
-## Quickstart
+## Quick Start
 
 ```bash
-# 1. Clone and install
+# Clone and start
 git clone https://github.com/rekollect/rekollect.git
 cd rekollect
-uv sync
-
-# 2. Start Neo4j
 docker compose up -d
-
-# 3. Set your OpenAI key (used for entity extraction)
-cp .env.example .env
-# Edit .env with your OPENAI_API_KEY
-
-# 4. Run the API
-uv run uvicorn rekollect.api:app --host 0.0.0.0 --port 8100
+cp .env.example .env  # add your OpenAI key
+uv sync
+uv run uvicorn app.main:app --port 8181 --reload
 ```
 
-API is now at `http://localhost:8100`.
+Default API key: `rk_dev_rekollect`
 
-## Usage
+## Test it
 
-### Remember something
 ```bash
-curl -X POST http://localhost:8100/v1/remember \
+# Store something
+curl -X POST http://localhost:8181/v1/remember \
+  -H "Authorization: Bearer rk_dev_rekollect" \
   -H "Content-Type: application/json" \
-  -d '{"content": "Use Railway for always-on hosting", "source": "decision"}'
-# Returns: {"job_id": "...", "status": "pending", "chunks": 1}
+  -d '{"content": "Cooper Flagg was drafted #1 by the Mavericks in 2025"}'
 
-# Check status
-curl http://localhost:8100/v1/remember/{job_id}
+# Search for it
+curl -X POST http://localhost:8181/v1/recall \
+  -H "Authorization: Bearer rk_dev_rekollect" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Cooper Flagg draft"}'
 ```
 
-Large content is auto-chunked. Duplicate content returns 409 and boosts importance instead of re-ingesting.
+## MCP Server
 
-### Recall with hybrid search
-```bash
-curl "http://localhost:8100/v1/recall?query=hosting+decision&limit=5"
+Connect Claude Desktop, Cursor, or any MCP client:
+
+```json
+{
+  "mcpServers": {
+    "rekollect": {
+      "url": "http://localhost:8181/mcp",
+      "headers": {
+        "Authorization": "Bearer rk_dev_rekollect"
+      }
+    }
+  }
+}
 ```
 
-Returns facts (graph edges), entities (nodes), and episode citations.
+## Endpoints
 
-### Recall as LLM prompt context
-```bash
-curl "http://localhost:8100/v1/recall?query=database+architecture&format=prompt&max_chars=4000"
-```
-
-### Stats
-```bash
-curl http://localhost:8100/v1/stats
-```
-
-## How it works
-
-**Ingestion:** Text → Graphiti extracts entities, relationships, and temporal facts → stored in Neo4j with embeddings.
-
-**Search:** Query → BM25 full-text + vector cosine similarity → Reciprocal Rank Fusion merges results → importance-weighted ranking.
-
-**Importance:** Every memory starts at 50/100. Recalled frequently? Goes up. Across diverse queries? Goes up faster. Not recalled in weeks? Decays. Memories that cross 75+ become "core memories" — always included in context.
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /v1/remember | Store + process content |
+| POST | /v1/recall | Hybrid search (vector + graph) |
+| POST | /v1/add | Store without processing |
+| POST | /v1/process | Process existing document |
+| GET | /v1/memories | List memories |
+| GET | /v1/memories/{id} | Get memory by ID |
+| DELETE | /v1/memories/{id} | Delete memory |
+| GET | /v1/collections | List collections |
+| POST | /v1/keys | Create API key |
+| GET | /v1/keys | List API keys |
+| DELETE | /v1/keys/{id} | Revoke API key |
+| GET | /health | Health check |
 
 ## Architecture
 
+- **Postgres + pgvector** -- document storage + vector similarity search
+- **Neo4j + Graphiti** -- knowledge graph extraction + fact search
+- **FastAPI** -- async API server
+- **FastMCP** -- MCP server for AI agent integration
+- **OpenAI** -- embeddings + entity extraction
+
+## Tests
+
+```bash
+uv run pytest tests/test_e2e.py -v              # E2E tests
+DEBUG=true uv run pytest tests/test_quality.py -v -s  # Quality baseline
 ```
-rekollect/
-├── memory.py       # RekollectMemory — the main class
-├── api.py          # FastAPI REST endpoints
-├── embedders.py    # Ollama adapter (pluggable)
-├── importance.py   # Scoring algorithm + Cypher
-└── ingestion.py    # Session parsing + chunking
-```
-
-Dependencies: `graphiti-core` (graph engine), `fastapi` (API), `httpx` (Ollama client).
-
-## API Reference
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/v1/remember` | Add memory (auto-chunks large content). Returns job ID (202) |
-| GET | `/v1/remember/{job_id}` | Check remember job status/progress |
-| POST/GET | `/v1/recall` | Search memory (hybrid). `format=json` or `format=prompt` |
-| GET | `/v1/stats` | Graph statistics + core memories |
-| GET | `/v1/whats-new` | Recent changes |
-| GET | `/v1/entities` | List/search entities |
-| GET | `/v1/timeline?entity=...` | Entity timeline |
-| GET | `/health` | Health check |
 
 ## License
 
