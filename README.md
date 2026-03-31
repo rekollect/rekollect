@@ -49,6 +49,153 @@ Connect Claude Desktop, Cursor, or any MCP client:
 }
 ```
 
+## Connect to an MCP Client
+
+Rekollect uses HTTP transport — every client uses the same URL and bearer token.
+
+> **Production / remote use:** Replace `http://localhost:8181` with your server URL and `rk_dev_rekollect` with your actual API key.
+
+<details>
+<summary>Claude Code</summary>
+<br>
+
+```bash
+claude mcp add rekollect \
+  --transport http \
+  --url http://localhost:8181/mcp \
+  --header "Authorization: Bearer rk_dev_rekollect"
+```
+
+</details>
+
+<details>
+<summary>Cursor</summary>
+<br>
+
+Add to `.cursor/mcp.json` (project-scoped) or `~/.cursor/mcp.json` (global):
+
+```json
+{
+  "mcpServers": {
+    "rekollect": {
+      "url": "http://localhost:8181/mcp",
+      "headers": {
+        "Authorization": "Bearer rk_dev_rekollect"
+      }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Claude Desktop</summary>
+<br>
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "rekollect": {
+      "url": "http://localhost:8181/mcp",
+      "headers": {
+        "Authorization": "Bearer rk_dev_rekollect"
+      }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>VS Code / VS Code Insiders</summary>
+<br>
+
+Add to your VS Code settings JSON:
+
+```json
+{
+  "mcp.servers": {
+    "rekollect": {
+      "url": "http://localhost:8181/mcp",
+      "headers": {
+        "Authorization": "Bearer rk_dev_rekollect"
+      }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Codex CLI</summary>
+<br>
+
+```bash
+codex mcp add rekollect \
+  --transport http \
+  --url http://localhost:8181/mcp \
+  --header "Authorization: Bearer rk_dev_rekollect"
+```
+
+Or add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.rekollect]
+url = "http://localhost:8181/mcp"
+
+[mcp_servers.rekollect.headers]
+Authorization = "Bearer rk_dev_rekollect"
+```
+
+</details>
+
+<details>
+<summary>Windsurf</summary>
+<br>
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "rekollect": {
+      "url": "http://localhost:8181/mcp",
+      "headers": {
+        "Authorization": "Bearer rk_dev_rekollect"
+      }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary>Kiro</summary>
+<br>
+
+Add to `.kiro/settings/mcp.json` (project-scoped) or `~/.kiro/settings/mcp.json` (global):
+
+```json
+{
+  "mcpServers": {
+    "rekollect": {
+      "url": "http://localhost:8181/mcp",
+      "headers": {
+        "Authorization": "Bearer rk_dev_rekollect"
+      }
+    }
+  }
+}
+```
+
+</details>
+
 ## Endpoints
 
 | Method | Path | Description |
